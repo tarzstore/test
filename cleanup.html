@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bersihkan Produk Lama — Tarz Store</title>
+<style>
+  body{background:#050505;color:#f2f2f5;font-family:sans-serif;padding:20px;}
+  button{background:#ff5c5c;color:#fff;border:none;padding:14px 20px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;}
+  button:disabled{opacity:.5;}
+  #log{margin-top:20px;font-size:13px;line-height:1.7;white-space:pre-wrap;background:#111;padding:16px;border-radius:10px;max-height:70vh;overflow:auto;}
+  .warn{background:rgba(255,180,0,.1);border:1px solid rgba(255,180,0,.3);color:#ffcf5c;padding:14px;border-radius:10px;margin-bottom:16px;font-size:13px;}
+  .info{background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.25);color:#9df7d9;padding:14px;border-radius:10px;margin-bottom:16px;font-size:13px;}
+</style>
+</head>
+<body>
+  <h2>Bersihkan 18 Produk Lama dari Supabase</h2>
+  <div class="info">Produk-produk di bawah ini SUDAH ada permanen di index.html (hardcoded), jadi tidak perlu lagi ada di tabel Supabase — kalau dibiarkan, mereka akan tampil DOBEL. Alat ini hanya menghapus 18 produk dengan nama yang persis sama dengan daftar migrasi lama. Produk baru yang kamu tambahkan lewat admin.html (seperti "TARZ XITER") TIDAK akan disentuh.</div>
+  <div class="warn">⚠️ Kamu harus login sebagai admin dulu di admin.html sebelum menjalankan ini (buka admin.html di tab lain, login, lalu balik ke sini).</div>
+  <button id="runBtn" onclick="runCleanup()">Hapus 18 Produk Lama Sekarang</button>
+  <div id="log"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://bvblcdnmbzncoqeoqkoc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_II7ZGSsImxo10OqzRy3U4A_JWQ4rg46';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* Daftar nama produk lama (persis sama dengan yang dulu di-migrate.html),
+   karena mereka sudah permanen ada di index.html secara hardcoded. */
+const OLD_PRODUCT_NAMES = [
+  "FAKE LAG V2","MC PAID PANEL","VEXTU PROXY V12","S3 HACK PROXY","KURAMA MODS",
+  "MUSK MODS","FAKE LAG MODS","AINCRAD MODS","BKL SENSI","MTH PROXY V16",
+  "VEXTU PROXY V9","XITEXE PROXY","DRIP CLIENT","BR MODS","FLUORITE IOS",
+  "8 BALL POOL","BLOOD STRIKE V2","BLOOD STRIKE V1"
+];
+
+function log(msg){
+  document.getElementById('log').textContent += msg + '\n';
+}
+
+async function runCleanup(){
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+
+  const { data:{ session } } = await db.auth.getSession();
+  if(!session){
+    log('❌ Kamu belum login. Buka admin.html di tab lain, login dulu, lalu refresh halaman ini.');
+    btn.disabled = false;
+    return;
+  }
+  log('✅ Login terverifikasi sebagai ' + session.user.email);
+
+  const { data: allProducts, error: fetchErr } = await db.from('products').select('id, name');
+  if(fetchErr){
+    log('❌ Gagal mengambil daftar produk: ' + fetchErr.message);
+    btn.disabled = false;
+    return;
+  }
+
+  const toDelete = allProducts.filter(p => OLD_PRODUCT_NAMES.includes((p.name || '').trim()));
+
+  if(toDelete.length === 0){
+    log('Tidak ada produk lama yang cocok ditemukan di tabel Supabase. Mungkin sudah bersih, atau belum pernah migrasi.');
+    btn.textContent = 'Selesai (tidak ada yang dihapus)';
+    return;
+  }
+
+  log('Ditemukan ' + toDelete.length + ' produk lama untuk dihapus:\n');
+  let success = 0, fail = 0;
+  for(const p of toDelete){
+    const { error } = await db.from('products').delete().eq('id', p.id);
+    if(error){
+      log('❌ Gagal hapus: ' + p.name + ' — ' + error.message);
+      fail++;
+    } else {
+      log('✅ Dihapus: ' + p.name);
+      success++;
+    }
+  }
+
+  log('\n=== SELESAI: ' + success + ' dihapus, ' + fail + ' gagal ===');
+  log('\nProduk baru yang kamu tambahkan lewat admin.html tetap aman dan tidak ikut terhapus.');
+  btn.textContent = 'Pembersihan Selesai';
+}
+</script>
+</body>
+</html>
