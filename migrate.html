@@ -14,7 +14,7 @@
 </head>
 <body>
   <h2>Migrasi 18 Produk Lama ke Supabase</h2>
-  <div class="warn">⚠️ Kamu harus login sebagai admin dulu di admin.html sebelum menjalankan ini (buka admin.html di tab lain, login, lalu balik ke sini). Jalankan tombol ini HANYA SEKALI — jalankan dua kali akan membuat produk dobel.</div>
+  <div class="warn">⚠️ Alat ini sudah otomatis dikunci: sebelum insert, ia cek dulu apakah ke-18 produk sudah ada di database — kalau sudah ada, migrasi TIDAK akan jalan lagi (tidak akan dobel walau tombol ini di-klik berkali-kali). Kamu tetap harus login sebagai admin dulu di admin.html.</div>
   <button id="runBtn" onclick="runMigration()">Jalankan Migrasi Sekarang</button>
   <div id="log"></div>
 
@@ -60,6 +60,31 @@ async function runMigration(){
     return;
   }
   log('✅ Login terverifikasi sebagai ' + session.user.email);
+
+  /* ── PENGUNCI ANTI-DOBEL ──
+     Cek dulu ke database: dari 18 nama produk di PRODUCTS_SEED, apakah ada yang
+     SUDAH ada di tabel products? Kalau ada satu saja yang cocok, migrasi dianggap
+     sudah pernah dijalankan sebelumnya -> batalkan total, tidak insert apa-apa. */
+  const seedNames = PRODUCTS_SEED.map(p => p.name);
+  const { data: existing, error: checkErr } = await db
+    .from('products')
+    .select('name')
+    .in('name', seedNames);
+
+  if(checkErr){
+    log('❌ Gagal mengecek produk yang sudah ada: ' + checkErr.message);
+    btn.disabled = false;
+    return;
+  }
+
+  if(existing && existing.length > 0){
+    log('🛑 Migrasi DIBATALKAN — ' + existing.length + ' dari 18 produk sudah ada di database (kemungkinan migrasi ini sudah pernah dijalankan sebelumnya):');
+    existing.forEach(p => log('   • ' + p.name));
+    log('\nTidak ada produk yang di-insert, supaya tidak dobel. Kalau kamu memang sengaja mau menambahkan ulang, hapus dulu produk lama itu secara manual lewat admin.html.');
+    btn.textContent = 'Dibatalkan (sudah pernah migrasi)';
+    return;
+  }
+
   log('Mulai migrasi ' + PRODUCTS_SEED.length + ' produk...\n');
 
   let success = 0, fail = 0;
