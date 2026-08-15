@@ -4565,13 +4565,17 @@ const PLAYLIST = [
     }
 
     /* Pastikan _appConfig sudah ada (bisa saja config.json masih memuat).
-       Daftarkan download/copyKey/getKeyLink produk Supabase ke _appConfig yang sama,
-       supaya getDownloadLink() / getProductCopyKey() / getProductKeyLink() yang sudah
-       ada otomatis berfungsi tanpa perlu duplikasi logika. */
-    if(!window._appConfig) window._appConfig = {};
-    if(!window._appConfig.downloads) window._appConfig.downloads = {};
-    if(!window._appConfig.copyKeys) window._appConfig.copyKeys = {};
-    if(!window._appConfig.getKeyLinks) window._appConfig.getKeyLinks = {};
+       PENTING: pakai variabel global `_appConfig` (dideklarasikan dengan `let` di script
+       lain), BUKAN `window._appConfig` — di script non-module, `let` di top-level TIDAK
+       otomatis jadi properti `window`, jadi kalau ditulis `window._appConfig = {}` di sini,
+       itu membuat objek terpisah yang tidak pernah dibaca oleh getDownloadLink() dkk,
+       sehingga link download produk Supabase selalu dianggap "belum tersedia".
+       Karena script ini dimuat setelah script yang mendeklarasikan `_appConfig`,
+       variabel itu sudah ada di scope global dan bisa diakses langsung di sini. */
+    if(!_appConfig) _appConfig = {};
+    if(!_appConfig.downloads) _appConfig.downloads = {};
+    if(!_appConfig.copyKeys) _appConfig.copyKeys = {};
+    if(!_appConfig.getKeyLinks) _appConfig.getKeyLinks = {};
     /* Jangan paksa _configLoadFailed = false di sini: kalau config.json memang gagal
        dimuat, produk LAMA (yang link-nya cuma ada di config.json) tetap harus
        menampilkan error, bukan diam-diam dianggap berhasil. Produk Supabase sendiri
@@ -4581,9 +4585,9 @@ const PLAYLIST = [
     data.forEach(p => {
       const name = (p.name || '').trim();
       if(!name) return;
-      if(p.download_link) window._appConfig.downloads[name] = p.download_link;
-      if(p.copy_key) window._appConfig.copyKeys[name] = p.copy_key;
-      if(p.get_key_link) window._appConfig.getKeyLinks[name] = p.get_key_link;
+      if(p.download_link) _appConfig.downloads[name] = p.download_link;
+      if(p.copy_key) _appConfig.copyKeys[name] = p.copy_key;
+      if(p.get_key_link) _appConfig.getKeyLinks[name] = p.get_key_link;
     });
 
     let cheatHtml = '';
@@ -4608,7 +4612,7 @@ const PLAYLIST = [
       const cardHtml = `
       <div class="card"
         data-special="${specialMode}"
-        data-img="" data-label=""
+        data-img="${npAttr(imgUrl)}" data-label="${npAttr(name)}"
         data-icon="" data-platform="${npAttr(platform)}"
         data-fitur='${fiturAttr}'
         data-poster="">
