@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Migrasi Produk — Tarz Store</title>
+<style>
+  body{background:#050505;color:#f2f2f5;font-family:sans-serif;padding:20px;}
+  button{background:#00e5a0;color:#05170f;border:none;padding:14px 20px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;}
+  button:disabled{opacity:.5;}
+  #log{margin-top:20px;font-size:13px;line-height:1.7;white-space:pre-wrap;background:#111;padding:16px;border-radius:10px;max-height:70vh;overflow:auto;}
+  .warn{background:rgba(255,180,0,.1);border:1px solid rgba(255,180,0,.3);color:#ffcf5c;padding:14px;border-radius:10px;margin-bottom:16px;font-size:13px;}
+</style>
+</head>
+<body>
+  <h2>Migrasi 18 Produk Lama ke Supabase</h2>
+  <div class="warn">⚠️ Kamu harus login sebagai admin dulu di admin.html sebelum menjalankan ini (buka admin.html di tab lain, login, lalu balik ke sini). Jalankan tombol ini HANYA SEKALI — jalankan dua kali akan membuat produk dobel.</div>
+  <button id="runBtn" onclick="runMigration()">Jalankan Migrasi Sekarang</button>
+  <div id="log"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://bvblcdnmbzncoqeoqkoc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_II7ZGSsImxo10OqzRy3U4A_JWQ4rg46';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const PRODUCTS_SEED = [
+  {"name":"FAKE LAG V2","price":"Rp 10.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/ping.jpg","description":"FRIZEE, TELEPORT, GHOST, VPN","download_link":"","platform":"android"},
+  {"name":"MC PAID PANEL","price":"Rp 10.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/Paid.jpg","description":"AIM BOT 90%, DRAG HS 98%, ATHENA, BYPASS","download_link":"","platform":"android"},
+  {"name":"VEXTU PROXY V12","price":"Rp 10.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/vtu.jpg","description":"BODY HS, MAGIC BULLET, ATHENA, AIM CHEST","download_link":"","platform":"android"},
+  {"name":"S3 HACK PROXY","price":"Rp 10.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/s3.jpg","description":"DRAG HS, ATHENA","download_link":"","platform":"android"},
+  {"name":"KURAMA MODS","price":"Rp 10.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/ku.jpg","description":"85% HS, UNLOCK SENSI, HOLOGRAM, ATHENA","download_link":"","platform":"android"},
+  {"name":"MUSK MODS","price":"Rp 10.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/mu.jpg","description":"AIM LOCK, ESP LINE, ATHENA, SKELETON, AIM LINE, DISTANCE","download_link":"","platform":"android"},
+  {"name":"FAKE LAG MODS","price":"Rp 10.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/fag.jpg","description":"FRIZEE, VPN","download_link":"","platform":"android"},
+  {"name":"AINCRAD MODS","price":"Rp 10.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/ac.jpg","description":"AIM SILENT, SILENT TARGET, GHOST HACK, SPEED TIMER, ESP LINE, ESP BOX, ESP NAME, ESP FOV","download_link":"","platform":"pc"},
+  {"name":"BKL SENSI","price":"Rp 10.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/bkl.jpg","description":"AIM BOT, AIM SILENT, SILENT TARGET, GHOST HACK, SPEED TIMER, TELE KILL, ESP LINE, ESP BOX, ESP NAME, ESP FOV","download_link":"","platform":"pc"},
+  {"name":"MTH PROXY V16","price":"Rp 10.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/mth.jpg","description":"BODY HS, LEHER HS, DADA HS, ATHENA, BACK JUMP, SENSI UNLOCK","download_link":"","platform":"android"},
+  {"name":"VEXTU PROXY V9","price":"Rp 10.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/v9.jpg","description":"BODY HS, MAGIC BULLET, ATHENA, AIM CHEST","download_link":"","platform":"android"},
+  {"name":"XITEXE PROXY","price":"Rp 10.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/xit.jpg","description":"BODY HS, SPEED TIMER","download_link":"","platform":"android"},
+  {"name":"DRIP CLIENT","price":"Rp 17.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/drip.jpg","description":"","download_link":"","platform":"android"},
+  {"name":"BR MODS","price":"Rp 15.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/br.jpg","description":"","download_link":"","platform":"pc"},
+  {"name":"FLUORITE IOS","price":"Rp 50.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/flo.jpg","description":"","download_link":"","platform":"ios"},
+  {"name":"8 BALL POOL","price":"Rp 10.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/pool.jpg","description":"AUTO PLAY, DRAW LINES, DRAW POCKETS, LINE THICKNESS","download_link":"","platform":"android"},
+  {"name":"BLOOD STRIKE V2","price":"Rp 10.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/v2.jpg","description":"UNLOCK ALL SKIN, AIM BOT, ESP LINE, AUTO HEADSHOT, UNLOCK 120 FPS, BYPASS","download_link":"","platform":"android"},
+  {"name":"BLOOD STRIKE V1","price":"Rp 10.000","image_url":"https://xxaenbqyeliyhrulyjuz.supabase.co/storage/v1/object/public/Videos/v1.jpg","description":"UNLOCK ALL SKIN, AIM BOT, ESP LINE, AUTO HEADSHOT, UNLOCK 120 FPS, BYPASS","download_link":"","platform":"android"}
+];
+
+function log(msg){
+  document.getElementById('log').textContent += msg + '\n';
+}
+
+async function runMigration(){
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+
+  const { data:{ session } } = await supabase.auth.getSession();
+  if(!session){
+    log('❌ Kamu belum login. Buka admin.html di tab lain, login dulu, lalu refresh halaman ini.');
+    btn.disabled = false;
+    return;
+  }
+  log('✅ Login terverifikasi sebagai ' + session.user.email);
+  log('Mulai migrasi ' + PRODUCTS_SEED.length + ' produk...\n');
+
+  let success = 0, fail = 0;
+  for(const p of PRODUCTS_SEED){
+    const { error } = await supabase.from('products').insert(p);
+    if(error){
+      log('❌ Gagal: ' + p.name + ' — ' + error.message);
+      fail++;
+    } else {
+      log('✅ Berhasil: ' + p.name);
+      success++;
+    }
+  }
+
+  log('\n=== SELESAI: ' + success + ' berhasil, ' + fail + ' gagal ===');
+  btn.textContent = 'Migrasi Selesai';
+}
+</script>
+</body>
+</html>
