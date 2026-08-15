@@ -3770,11 +3770,11 @@ function showVipGate(){
 
   const joinVipBtn = document.getElementById('keyBtnJoinVip');
   if(joinVipBtn){
-    joinVipBtn.style.display = (_keySourceTab === 'cheat' || _keySourceTab === 'file') ? 'flex' : 'none';
+    joinVipBtn.style.display = (_keySourceTab === 'cheat' || _keySourceTab === 'file' || _keySourceTab === 'newproduct') ? 'flex' : 'none';
   }
   const joinVipWaBtn = document.getElementById('keyBtnJoinVipWa');
   if(joinVipWaBtn){
-    joinVipWaBtn.style.display = (_keySourceTab === 'cheat' || _keySourceTab === 'file') ? 'flex' : 'none';
+    joinVipWaBtn.style.display = (_keySourceTab === 'cheat' || _keySourceTab === 'file' || _keySourceTab === 'newproduct') ? 'flex' : 'none';
   }
 }
 
@@ -4554,19 +4554,22 @@ const PLAYLIST = [
     }
 
     grid.innerHTML = data.map(p => {
-      const waMsg = encodeURIComponent('Halo, saya mau beli produk: ' + p.name + ' (' + p.price + ')');
-      const buyHref = p.download_link && p.download_link.trim()
-        ? p.download_link
-        : 'https://wa.me/' + NP_WA_NUMBER + '?text=' + waMsg;
+      /* Produk baru ikut sistem VIP yang sama seperti produk lama:
+         klik tombol -> openKeyModal cek status VIP device ini.
+         Sudah VIP -> langsung download p.download_link.
+         Belum VIP -> tampilkan gerbang VIP (QRIS/WhatsApp) seperti biasa. */
+      const desc = npEscape(p.description || '');
+      const dlLink = p.download_link && p.download_link.trim() ? p.download_link : '#';
       return `
-      <div class="card">
+      <div class="card"
+        data-img="${npEscape(p.image_url || '')}" data-label="${npEscape(p.name)}"
+        data-platform="${npEscape(p.platform || '')}"
+        data-desc="${desc}">
         <div class="product-image" data-label="${npEscape(p.name)}">
           <img src="${npEscape(p.image_url || '')}" alt="${npEscape(p.name)}" onerror="this.classList.add('img-error')" loading="lazy" decoding="async" width="300" height="200">
         </div>
         <h4>${npEscape(p.name)}</h4>
-        <p style="font-size:.72rem;color:var(--text2);padding:0 10px;margin:-6px 0 6px;line-height:1.4;">${npEscape(p.description || '')}</p>
-        <p style="font-size:.78rem;font-weight:700;color:var(--text);padding:0 10px;margin-bottom:8px;">${npEscape(p.price)}${p.platform ? ' · ' + npPlatformLabel(p.platform) : ''}</p>
-        <a class="buy-btn" href="${buyHref}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;">BELI SEKARANG</a>
+        <button class="buy-btn" onclick="openKeyModal('${npEscape(p.name).replace(/'/g,"\\'")}', '${dlLink.replace(/'/g,"\\'")}', 'newproduct')" style="display:flex;align-items:center;justify-content:center;gap:6px;"><span class="js-icon" data-icon-key="installBtn"></span>INSTALL</button>
       </div>`;
     }).join('');
   }
