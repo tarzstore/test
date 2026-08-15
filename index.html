@@ -4626,8 +4626,11 @@ const PLAYLIST = [
       else cheatHtml += cardHtml; // default: freefire
     });
 
-    if(cheatHtml) cheatGrid.insertAdjacentHTML('beforeend', cheatHtml);
-    if(allgameHtml) allgameGrid.insertAdjacentHTML('beforeend', allgameHtml);
+    /* 'afterbegin' -> produk baru dari Supabase disisipkan di PALING ATAS grid,
+       sebelum 18 produk lama yang hardcoded, supaya produk paling baru selalu
+       tampil paling depan (bukan numpuk di bawah). */
+    if(cheatHtml) cheatGrid.insertAdjacentHTML('afterbegin', cheatHtml);
+    if(allgameHtml) allgameGrid.insertAdjacentHTML('afterbegin', allgameHtml);
 
     /* Update jumlah di tab-count setelah produk baru masuk ke grid */
     const cheatCountEl = document.getElementById('cheatCount');
